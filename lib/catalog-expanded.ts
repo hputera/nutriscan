@@ -1,584 +1,359 @@
-import {FOODS as PREVIOUS} from "./catalog-seed.ts";
-import type {FoodProfile,CatalogVersion} from "./types.ts";
-export const CURRENT_CATALOG_VERSION:CatalogVersion="personal-v4";
+import { FOODS as PREVIOUS } from "./catalog-seed.ts";
+import type { FoodProfile, CatalogVersion } from "./types.ts";
+export const CURRENT_CATALOG_VERSION: CatalogVersion = "personal-v4";
 // Curated transcription: energy, protein, carbohydrate, fat, fiber per 100 g edible food.
 // Printed page = PDF page - 4. Blank cells were not converted to zero.
-type ReferenceRow=[string,string,string,[number,number,number,number,number],string[],string,number];
-const rows:ReferenceRow[]=[
- [
-  "ketoprak",
-  "Ketoprak",
-  "Masakan campuran",
-  [
-   153,
-   7.9,
-   13,
-   7.7,
-   2.9
-  ],
-  [
-   "ketoprak"
-  ],
-  "AP060",
-  13
- ],
- [
-  "klepon",
-  "Klepon",
-  "Camilan",
-  [
-   215,
-   3.7,
-   41.8,
-   3.7,
-   1
-  ],
-  [
-   "klepon",
-   "kue klepon"
-  ],
-  "AP058",
-  12
- ],
- [
-  "lupis-ketan",
-  "Lupis ketan",
-  "Camilan",
-  [
-   164,
-   1.8,
-   34.5,
-   2.1,
-   0.7
-  ],
-  [
-   "lupis ketan",
-   "kue lupis ketan"
-  ],
-  "AP079",
-  13
- ],
- [
-  "putu-cangkir",
-  "Kue putu cangkir",
-  "Camilan",
-  [
-   304,
-   5.3,
-   54.9,
-   7,
-   0.9
-  ],
-  [
-   "kue putu cangkir",
-   "putu cangkir"
-  ],
-  "AP074",
-  13
- ],
- [
-  "mi-bakso",
-  "Mi bakso",
-  "Masakan campuran",
-  [
-   114,
-   5.3,
-   16.4,
-   3,
-   0.1
-  ],
-  [
-   "mi bakso",
-   "mie bakso"
-  ],
-  "AP086",
-  14
- ],
- [
-  "nasi-gurih",
-  "Nasi gurih",
-  "Karbohidrat",
-  [
-   190,
-   4.7,
-   26,
-   7.5,
-   0.7
-  ],
-  [
-   "nasi gurih"
-  ],
-  "AP090",
-  14
- ],
- [
-  "nasi-minyak",
-  "Nasi minyak",
-  "Karbohidrat",
-  [
-   207,
-   3.5,
-   37.1,
-   5,
-   0.8
-  ],
-  [
-   "nasi minyak"
-  ],
-  "AP091",
-  14
- ],
- [
-  "moon-tahu",
-  "Moon tahu",
-  "Masakan campuran",
-  [
-   128,
-   8,
-   1.3,
-   10,
-   0.2
-  ],
-  [
-   "moon tahu",
-   "mun tahu"
-  ],
-  "CP050",
-  27
- ],
- [
-  "tahu-telur",
-  "Tahu telur",
-  "Masakan campuran",
-  [
-   328,
-   12.6,
-   24.6,
-   19.9,
-   0.4
-  ],
-  [
-   "tahu telur"
-  ],
-  "CP063",
-  28
- ],
- [
-  "tauco",
-  "Tauco",
-  "Bumbu",
-  [
-   184,
-   11.4,
-   22.2,
-   5.5,
-   1.9
-  ],
-  [
-   "tauco"
-  ],
-  "CP065",
-  28
- ],
- [
-  "susu-kedelai",
-  "Susu kedelai",
-  "Susu",
-  [
-   41,
-   3.5,
-   5,
-   2.5,
-   0.2
-  ],
-  [
-   "susu kedelai",
-   "sari kedelai"
-  ],
-  "CP060",
-  27
- ],
- [
-  "jambu-air",
-  "Jambu air segar",
-  "Buah",
-  [
-   46,
-   0.6,
-   11.8,
-   0.2,
-   2.1
-  ],
-  [
-   "jambu air",
-   "jambu air segar"
-  ],
-  "ER030",
-  43
- ],
- [
-  "jambu-biji",
-  "Jambu biji segar",
-  "Buah",
-  [
-   64,
-   0.9,
-   12.2,
-   0.3,
-   2.4
-  ],
-  [
-   "jambu biji",
-   "jambu biji segar"
-  ],
-  "ER031",
-  43
- ],
- [
-  "duku",
-  "Duku segar",
-  "Buah",
-  [
-   63,
-   1,
-   16.1,
-   0.2,
-   4.3
-  ],
-  [
-   "duku",
-   "duku segar"
-  ],
-  "ER022",
-  43
- ],
- [
-  "kelapa-muda",
-  "Daging kelapa muda segar",
-  "Buah",
-  [
-   68,
-   1,
-   14,
-   0.9,
-   0
-  ],
-  [
-   "daging kelapa muda",
-   "daging kelapa muda segar"
-  ],
-  "ER046",
-  44
- ],
- [
-  "kedondong",
-  "Kedondong segar",
-  "Buah",
-  [
-   47,
-   0.5,
-   10.4,
-   0.2,
-   2.7
-  ],
-  [
-   "kedondong",
-   "kedondong segar"
-  ],
-  "ER044",
-  44
- ],
- [
-  "nanas",
-  "Nanas segar",
-  "Buah",
-  [
-   40,
-   0.6,
-   9.9,
-   0.3,
-   0.6
-  ],
-  [
-   "nanas",
-   "nanas segar"
-  ],
-  "ER070",
-  45
- ],
- [
-  "ayam-kentucky-dada",
-  "Ayam goreng Kentucky, dada",
-  "Protein hewani",
-  [
-   298,
-   34.2,
-   0.1,
-   16.8,
-   0
-  ],
-  [
-   "ayam goreng kentucky dada",
-   "dada ayam goreng kentucky",
-   "ayam goreng tepung dada"
-  ],
-  "FP025",
-  51
- ],
- [
-  "ayam-kentucky-paha",
-  "Ayam goreng Kentucky, paha",
-  "Protein hewani",
-  [
-   286,
-   32.1,
-   1.1,
-   16.1,
-   0
-  ],
-  [
-   "ayam goreng kentucky paha",
-   "paha ayam goreng kentucky",
-   "ayam goreng tepung paha"
-  ],
-  "FP026",
-  51
- ],
- [
-  "ayam-kalasan-paha",
-  "Ayam goreng Kalasan, paha",
-  "Protein hewani",
-  [
-   275,
-   37.4,
-   1.3,
-   12.2,
-   0
-  ],
-  [
-   "ayam goreng kalasan paha",
-   "paha ayam goreng kalasan"
-  ],
-  "FP024",
-  51
- ],
- [
-  "ayam-sukabumi-dada",
-  "Ayam goreng Sukabumi, dada",
-  "Protein hewani",
-  [
-   244,
-   36.7,
-   1,
-   9.2,
-   0
-  ],
-  [
-   "ayam goreng sukabumi dada",
-   "dada ayam goreng sukabumi"
-  ],
-  "FP032",
-  51
- ],
- [
-  "beef-teriyaki",
-  "Beef teriyaki",
-  "Protein hewani",
-  [
-   151,
-   8.6,
-   22.3,
-   3.1,
-   0.3
-  ],
-  [
-   "beef teriyaki",
-   "sapi teriyaki"
-  ],
-  "FP037",
-  51
- ],
- [
-  "beef-yakiniku",
-  "Beef yakiniku",
-  "Protein hewani",
-  [
-   132,
-   9.8,
-   20.7,
-   1.1,
-   0.3
-  ],
-  [
-   "beef yakiniku",
-   "sapi yakiniku"
-  ],
-  "FP038",
-  51
- ],
- [
-  "chicken-teriyaki",
-  "Chicken teriyaki",
-  "Protein hewani",
-  [
-   168,
-   13,
-   7.5,
-   9.6,
-   0.8
-  ],
-  [
-   "chicken teriyaki",
-   "ayam teriyaki"
-  ],
-  "FP041",
-  51
- ],
- [
-  "rendang-sapi",
-  "Rendang sapi",
-  "Protein hewani",
-  [
-   193,
-   22.6,
-   7.8,
-   7.9,
-   0
-  ],
-  [
-   "rendang sapi",
-   "rendang daging sapi"
-  ],
-  "FP062",
-  53
- ],
- [
-  "soto-betawi",
-  "Soto Betawi",
-  "Masakan campuran",
-  [
-   135,
-   2.5,
-   11.5,
-   8.8,
-   0.5
-  ],
-  [
-   "soto betawi"
-  ],
-  "FP076",
-  53
- ],
- [
-  "soto-bandung",
-  "Soto Bandung",
-  "Masakan campuran",
-  [
-   42,
-   3.9,
-   2.8,
-   1.7,
-   0.4
-  ],
-  [
-   "soto bandung"
-  ],
-  "FP074",
-  53
- ],
- [
-  "kecap",
-  "Kecap",
-  "Bumbu",
-  [
-   71,
-   5.7,
-   9,
-   1.3,
-   0
-  ],
-  [
-   "kecap"
-  ],
-  "NP005",
-  71
- ],
- [
-  "saus-tomat",
-  "Saus tomat",
-  "Bumbu",
-  [
-   110,
-   2,
-   24.5,
-   0.4,
-   0.9
-  ],
-  [
-   "saus tomat",
-   "saos tomat"
-  ],
-  "NP009",
-  71
- ],
- [
-  "belimbing",
-  "Belimbing segar",
-  "Buah",
-  [
-   36,
-   0.4,
-   8.8,
-   0.4,
-   3.2
-  ],
-  [
-   "belimbing",
-   "belimbing segar"
-  ],
-  "ER006",
-  42
- ],
- [
-  "rambutan",
-  "Rambutan segar",
-  "Buah",
-  [
-   69,
-   0.9,
-   18.1,
-   0.1,
-   0.8
-  ],
-  [
-   "rambutan",
-   "rambutan segar"
-  ],
-  "ER097",
-  46
- ],
- [
-  "sawo-manila",
-  "Sawo manila segar",
-  "Buah",
-  [
-   92,
-   0.5,
-   22.4,
-   1.1,
-   9.5
-  ],
-  [
-   "sawo manila",
-   "sawo manila segar"
-  ],
-  "ER104",
-  46
- ]
+type ReferenceRow = [
+  string,
+  string,
+  string,
+  [number, number, number, number, number],
+  string[],
+  string,
+  number,
 ];
-export const ADDED_FOODS:FoodProfile[]=rows.map(([id,name,group,[calories,protein,carbs,fat,fiber],aliases,code,page])=>({
- id,name,group,icon:"",ingredients:[],aliases,excludeTerms:[],per100g:{calories,protein,carbs,fat,fiber},
- nutritionReference:{status:"reference",title:"TKPI Kemenkes 2020",url:"https://repository.kemkes.go.id/book/668",code,page,note:"Per 100 g bagian termakan. Resep dalam TKPI dapat berbeda dari sajianmu; bukan data khusus merek/restoran. Sel kosong tidak dianggap nol; sebagian nilai TKPI berasal dari imputasi."}
-}));
-export const FOODS:FoodProfile[]=[...PREVIOUS.map(f=>({...f,aliases:[...new Set([f.name,...(f.aliases??[])])],nutritionReference:f.nutritionReference?{...f.nutritionReference,note:f.nutritionReference.note.replaceAll("padanan resep","referensi resep").replaceAll("padanan referensi","data referensi")}:undefined})),...ADDED_FOODS];
-export const CATALOG_METADATA={version:CURRENT_CATALOG_VERSION,source:"TKPI Kemenkes 2020 dan profil estimasi prototype",referenceCount:FOODS.filter(f=>f.nutritionReference?.status==="reference").length,totalFoods:FOODS.length,validated:false,nutritionUrl:"https://repository.kemkes.go.id/book/668",previousVersion:"personal-v3",addedReferences:ADDED_FOODS.length};
+const rows: ReferenceRow[] = [
+  [
+    "ketoprak",
+    "Ketoprak",
+    "Masakan campuran",
+    [153, 7.9, 13, 7.7, 2.9],
+    ["ketoprak"],
+    "AP060",
+    13,
+  ],
+  [
+    "klepon",
+    "Klepon",
+    "Camilan",
+    [215, 3.7, 41.8, 3.7, 1],
+    ["klepon", "kue klepon"],
+    "AP058",
+    12,
+  ],
+  [
+    "lupis-ketan",
+    "Lupis ketan",
+    "Camilan",
+    [164, 1.8, 34.5, 2.1, 0.7],
+    ["lupis ketan", "kue lupis ketan"],
+    "AP079",
+    13,
+  ],
+  [
+    "putu-cangkir",
+    "Kue putu cangkir",
+    "Camilan",
+    [304, 5.3, 54.9, 7, 0.9],
+    ["kue putu cangkir", "putu cangkir"],
+    "AP074",
+    13,
+  ],
+  [
+    "mi-bakso",
+    "Mi bakso",
+    "Masakan campuran",
+    [114, 5.3, 16.4, 3, 0.1],
+    ["mi bakso", "mie bakso"],
+    "AP086",
+    14,
+  ],
+  [
+    "nasi-gurih",
+    "Nasi gurih",
+    "Karbohidrat",
+    [190, 4.7, 26, 7.5, 0.7],
+    ["nasi gurih"],
+    "AP090",
+    14,
+  ],
+  [
+    "nasi-minyak",
+    "Nasi minyak",
+    "Karbohidrat",
+    [207, 3.5, 37.1, 5, 0.8],
+    ["nasi minyak"],
+    "AP091",
+    14,
+  ],
+  [
+    "moon-tahu",
+    "Moon tahu",
+    "Masakan campuran",
+    [128, 8, 1.3, 10, 0.2],
+    ["moon tahu", "mun tahu"],
+    "CP050",
+    27,
+  ],
+  [
+    "tahu-telur",
+    "Tahu telur",
+    "Masakan campuran",
+    [328, 12.6, 24.6, 19.9, 0.4],
+    ["tahu telur"],
+    "CP063",
+    28,
+  ],
+  [
+    "tauco",
+    "Tauco",
+    "Bumbu",
+    [184, 11.4, 22.2, 5.5, 1.9],
+    ["tauco"],
+    "CP065",
+    28,
+  ],
+  [
+    "susu-kedelai",
+    "Susu kedelai",
+    "Susu",
+    [41, 3.5, 5, 2.5, 0.2],
+    ["susu kedelai", "sari kedelai"],
+    "CP060",
+    27,
+  ],
+  [
+    "jambu-air",
+    "Jambu air segar",
+    "Buah",
+    [46, 0.6, 11.8, 0.2, 2.1],
+    ["jambu air", "jambu air segar"],
+    "ER030",
+    43,
+  ],
+  [
+    "jambu-biji",
+    "Jambu biji segar",
+    "Buah",
+    [64, 0.9, 12.2, 0.3, 2.4],
+    ["jambu biji", "jambu biji segar"],
+    "ER031",
+    43,
+  ],
+  [
+    "duku",
+    "Duku segar",
+    "Buah",
+    [63, 1, 16.1, 0.2, 4.3],
+    ["duku", "duku segar"],
+    "ER022",
+    43,
+  ],
+  [
+    "kelapa-muda",
+    "Daging kelapa muda segar",
+    "Buah",
+    [68, 1, 14, 0.9, 0],
+    ["daging kelapa muda", "daging kelapa muda segar"],
+    "ER046",
+    44,
+  ],
+  [
+    "kedondong",
+    "Kedondong segar",
+    "Buah",
+    [47, 0.5, 10.4, 0.2, 2.7],
+    ["kedondong", "kedondong segar"],
+    "ER044",
+    44,
+  ],
+  [
+    "nanas",
+    "Nanas segar",
+    "Buah",
+    [40, 0.6, 9.9, 0.3, 0.6],
+    ["nanas", "nanas segar"],
+    "ER070",
+    45,
+  ],
+  [
+    "ayam-kentucky-dada",
+    "Ayam goreng Kentucky, dada",
+    "Protein hewani",
+    [298, 34.2, 0.1, 16.8, 0],
+    [
+      "ayam goreng kentucky dada",
+      "dada ayam goreng kentucky",
+      "ayam goreng tepung dada",
+    ],
+    "FP025",
+    51,
+  ],
+  [
+    "ayam-kentucky-paha",
+    "Ayam goreng Kentucky, paha",
+    "Protein hewani",
+    [286, 32.1, 1.1, 16.1, 0],
+    [
+      "ayam goreng kentucky paha",
+      "paha ayam goreng kentucky",
+      "ayam goreng tepung paha",
+    ],
+    "FP026",
+    51,
+  ],
+  [
+    "ayam-kalasan-paha",
+    "Ayam goreng Kalasan, paha",
+    "Protein hewani",
+    [275, 37.4, 1.3, 12.2, 0],
+    ["ayam goreng kalasan paha", "paha ayam goreng kalasan"],
+    "FP024",
+    51,
+  ],
+  [
+    "ayam-sukabumi-dada",
+    "Ayam goreng Sukabumi, dada",
+    "Protein hewani",
+    [244, 36.7, 1, 9.2, 0],
+    ["ayam goreng sukabumi dada", "dada ayam goreng sukabumi"],
+    "FP032",
+    51,
+  ],
+  [
+    "beef-teriyaki",
+    "Beef teriyaki",
+    "Protein hewani",
+    [151, 8.6, 22.3, 3.1, 0.3],
+    ["beef teriyaki", "sapi teriyaki"],
+    "FP037",
+    51,
+  ],
+  [
+    "beef-yakiniku",
+    "Beef yakiniku",
+    "Protein hewani",
+    [132, 9.8, 20.7, 1.1, 0.3],
+    ["beef yakiniku", "sapi yakiniku"],
+    "FP038",
+    51,
+  ],
+  [
+    "chicken-teriyaki",
+    "Chicken teriyaki",
+    "Protein hewani",
+    [168, 13, 7.5, 9.6, 0.8],
+    ["chicken teriyaki", "ayam teriyaki"],
+    "FP041",
+    51,
+  ],
+  [
+    "rendang-sapi",
+    "Rendang sapi",
+    "Protein hewani",
+    [193, 22.6, 7.8, 7.9, 0],
+    ["rendang sapi", "rendang daging sapi"],
+    "FP062",
+    53,
+  ],
+  [
+    "soto-betawi",
+    "Soto Betawi",
+    "Masakan campuran",
+    [135, 2.5, 11.5, 8.8, 0.5],
+    ["soto betawi"],
+    "FP076",
+    53,
+  ],
+  [
+    "soto-bandung",
+    "Soto Bandung",
+    "Masakan campuran",
+    [42, 3.9, 2.8, 1.7, 0.4],
+    ["soto bandung"],
+    "FP074",
+    53,
+  ],
+  ["kecap", "Kecap", "Bumbu", [71, 5.7, 9, 1.3, 0], ["kecap"], "NP005", 71],
+  [
+    "saus-tomat",
+    "Saus tomat",
+    "Bumbu",
+    [110, 2, 24.5, 0.4, 0.9],
+    ["saus tomat", "saos tomat"],
+    "NP009",
+    71,
+  ],
+  [
+    "belimbing",
+    "Belimbing segar",
+    "Buah",
+    [36, 0.4, 8.8, 0.4, 3.2],
+    ["belimbing", "belimbing segar"],
+    "ER006",
+    42,
+  ],
+  [
+    "rambutan",
+    "Rambutan segar",
+    "Buah",
+    [69, 0.9, 18.1, 0.1, 0.8],
+    ["rambutan", "rambutan segar"],
+    "ER097",
+    46,
+  ],
+  [
+    "sawo-manila",
+    "Sawo manila segar",
+    "Buah",
+    [92, 0.5, 22.4, 1.1, 9.5],
+    ["sawo manila", "sawo manila segar"],
+    "ER104",
+    46,
+  ],
+];
+export const ADDED_FOODS: FoodProfile[] = rows.map(
+  ([
+    id,
+    name,
+    group,
+    [calories, protein, carbs, fat, fiber],
+    aliases,
+    code,
+    page,
+  ]) => ({
+    id,
+    name,
+    group,
+    icon: "",
+    ingredients: [],
+    aliases,
+    excludeTerms: [],
+    per100g: { calories, protein, carbs, fat, fiber },
+    nutritionReference: {
+      status: "reference",
+      title: "TKPI Kemenkes 2020",
+      url: "https://repository.kemkes.go.id/book/668",
+      code,
+      page,
+      note: "Per 100 g bagian termakan. Resep dalam TKPI dapat berbeda dari sajianmu; bukan data khusus merek/restoran. Sel kosong tidak dianggap nol; sebagian nilai TKPI berasal dari imputasi.",
+    },
+  }),
+);
+export const FOODS: FoodProfile[] = [
+  ...PREVIOUS.map((f) => ({
+    ...f,
+    aliases: [...new Set([f.name, ...(f.aliases ?? [])])],
+    nutritionReference: f.nutritionReference
+      ? {
+          ...f.nutritionReference,
+          note: f.nutritionReference.note
+            .replaceAll("padanan resep", "referensi resep")
+            .replaceAll("padanan referensi", "data referensi"),
+        }
+      : undefined,
+  })),
+  ...ADDED_FOODS,
+];
+export const CATALOG_METADATA = {
+  version: CURRENT_CATALOG_VERSION,
+  source: "TKPI Kemenkes 2020 dan profil estimasi prototype",
+  referenceCount: FOODS.filter(
+    (f) => f.nutritionReference?.status === "reference",
+  ).length,
+  totalFoods: FOODS.length,
+  validated: false,
+  nutritionUrl: "https://repository.kemkes.go.id/book/668",
+  previousVersion: "personal-v3",
+  addedReferences: ADDED_FOODS.length,
+};

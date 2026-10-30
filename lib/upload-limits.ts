@@ -1,3 +1,3 @@
-export const SCAN_MAX_BYTES=3*1024*1024;
-export const MIGRATION_BATCH_SIZE=5;
-export const MIGRATION_MAX_BYTES=3*1024*1024;
+export const SCAN_MAX_BYTES = 3 * 1024 * 1024;
+export const MIGRATION_BATCH_SIZE = 5;
+export const MIGRATION_MAX_BYTES = 3 * 1024 * 1024;
