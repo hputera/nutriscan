@@ -1,0 +1,34 @@
+// Example purchasing assumptions, all IDR/kg (including oil and milk).
+// Scenario date is not a market survey date. Recipes/yields remain estimates.
+export const PRICE_ASSUMPTIONS = { status: "estimate", region: "Jakarta Selatan", scenarioDate: "2026-10-29", unit: "IDR/kg", source: "Harga contoh prototype; bukan survei pasar/supplier" } as const;
+export const INGREDIENT_PRICES: Readonly<Record<string, number>> = Object.freeze({
+  "Beras": 15000,
+  "Ayam mentah (alokasi bagian termakan)": 38000,
+  "Minyak goreng": 20000,
+  "Bumbu ayam": 30000,
+  "Bumbu panggang": 25000,
+  "Kentang": 18000,
+  "Wortel": 15000,
+  "Buncis": 18000,
+  "Jagung": 12000,
+  "Bumbu sayur": 25000,
+  "Tempe": 18000,
+  "Bumbu": 25000,
+  "Tahu": 14000,
+  "Telur (termasuk susut cangkang)": 30000,
+  "Telur": 30000,
+  "Ikan mentah (alokasi bagian termakan)": 36000,
+  "Bumbu ikan": 30000,
+  "Daging sapi": 130000,
+  "Tepung tapioka": 14000,
+  "Bumbu bakso": 25000,
+  "Tepung terigu": 13000,
+  "Sayuran": 15000,
+  "Pisang (termasuk susut kulit)": 18000,
+  "Pepaya (termasuk susut kulit/biji)": 10000,
+  "Jeruk (termasuk susut kulit)": 24000,
+  "Susu UHT tawar": 20000,
+  "Mi kering": 18000,
+  "Bumbu mi": 25000,
+  "Saus siap pakai": 20000
+});

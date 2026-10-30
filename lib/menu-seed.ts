@@ -1,0 +1,11 @@
+export const MENU_TEMPLATES=[
+ {id:"plant-light",name:"Brokoli, jagung & pepaya",items:[["brokoli",100],["jagung-rebus",50],["pepaya",150]],allergens:[],diet:"vegan"},
+ {id:"tofu-light",name:"Tahu kukus & sayur",items:[["tahu-kukus",100],["brokoli",100],["pepaya",100]],allergens:["Kedelai"],diet:"vegan"},
+ {id:"egg-light",name:"Nasi, telur & mentimun",items:[["nasi",75],["telur",60],["mentimun",80]],allergens:["Telur"],diet:"vegetarian"},
+ {id:"plant-medium",name:"Jagung, ubi & brokoli",items:[["jagung-rebus",150],["ubi-rebus",200],["brokoli",100],["pepaya",150]],allergens:[],diet:"vegan"},
+ {id:"tempe-medium",name:"Nasi, tempe kukus & buah",items:[["nasi",150],["tempe-kukus",100],["brokoli",100],["pepaya",150]],allergens:["Kedelai"],diet:"vegan"},
+ {id:"chicken-medium",name:"Nasi & dada ayam panggang",items:[["nasi",150],["dada-ayam",100],["brokoli",100]],allergens:["Kedelai","Gandum/gluten"],diet:"all"},
+ {id:"plant-high",name:"Porsi jagung, ubi & buah",items:[["jagung-rebus",200],["ubi-rebus",350],["brokoli",150],["pepaya",150]],allergens:[],diet:"vegan"},
+ {id:"tempe-high",name:"Nasi, tempe & sayur porsi besar",items:[["nasi",250],["tempe-kukus",150],["brokoli",125],["pepaya",150]],allergens:["Kedelai"],diet:"vegan"},
+ {id:"chicken-high",name:"Nasi ayam panggang & pepaya",items:[["nasi",250],["dada-ayam",150],["brokoli",100],["pepaya",100]],allergens:["Kedelai","Gandum/gluten"],diet:"all"},
+] as const;
