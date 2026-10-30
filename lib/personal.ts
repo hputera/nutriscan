@@ -1,4 +1,5 @@
 import type { UserProfile, Nutrients, Submission, MealType, MenuTemplate } from "./types.ts";
+import {adolescentEnergy} from "./adolescent-energy.ts";
 import { FOODS } from "./catalog.ts";
 import { summarize, versionForRecord } from "./nutrition.ts";
 export const MEALS:Record<MealType,string>={breakfast:"Sarapan",lunch:"Makan siang",dinner:"Makan malam",snack:"Camilan"};
@@ -13,15 +14,16 @@ export function bmiFor(p:Pick<UserProfile,"weightKg"|"heightCm"|"age">){
  return {value,label};
 }
 export function planFor(p:UserProfile){
- const bmi=bmiFor(p);const rest=10*p.weightKg+6.25*p.heightCm-5*p.age+(p.sex==="male"?5:-161);
- const maintenance=rest*ACTIVITIES[p.activity].factor;
- let reason=p.specialCare?"Perhitungan dan menu personal tidak ditampilkan untuk kehamilan, menyusui, atau kebutuhan diet khusus. Gunakan arahan tenaga kesehatan.":p.age<19||p.age>78?"Rumus energi ini diteliti pada usia 19–78 tahun; target personal belum ditampilkan untuk usia ini.":"";
- const goalAllowed=!(p.goal==="lose"&&bmi.value<18.5)&&!(p.goal==="gain"&&bmi.value>=30);
+ const bmi=bmiFor(p);const isAdolescent=p.age>=17&&p.age<19;
+ const rest=p.age>=19?10*p.weightKg+6.25*p.heightCm-5*p.age+(p.sex==="male"?5:-161):null;
+ const maintenance=isAdolescent?adolescentEnergy(p):(rest??0)*ACTIVITIES[p.activity].factor;
+ let reason=p.specialCare?"Perhitungan dan menu personal tidak ditampilkan untuk kehamilan, menyusui, atau kebutuhan diet khusus. Gunakan arahan tenaga kesehatan.":p.age<17||p.age>78?"Target personal tersedia untuk usia 17–78 tahun; di luar rentang ini diperlukan peninjauan terpisah.":"";
+ const goalAllowed=p.age>=19&&!(p.goal==="lose"&&bmi.value<18.5)&&!(p.goal==="gain"&&bmi.value>=30);
  const adjustment=goalAllowed?(p.goal==="lose"?.9:p.goal==="gain"?1.1:1):1;
  const energy=Math.round(maintenance*adjustment/10)*10;
  if(!reason&&(energy<1500||energy>4500))reason="Hasil perkiraan berada di luar rentang target prototype. Tinjau kebutuhan bersama ahli gizi.";
  const targets:Nutrients={calories:energy,protein:Math.round(energy*.2/4),carbs:Math.round(energy*.5/4),fat:Math.round(energy*.3/9),fiber:Math.round(energy*14/1000)};
- return {bmi:p.specialCare?{...bmi,label:"BMI memerlukan interpretasi khusus"}:bmi,rest:Math.round(rest),maintenance:Math.round(maintenance),targets:reason?null:targets,reason,goalNote:goalAllowed?"Penyesuaian tujuan ±10% adalah asumsi awal prototype, bukan resep diet atau janji perubahan berat badan.":"Tujuan ini perlu ditinjau; aplikasi memakai perkiraan pemeliharaan tanpa penyesuaian."};
+ return {bmi:p.specialCare?{...bmi,label:"BMI memerlukan interpretasi khusus"}:bmi,isAdolescent,rest:rest===null?null:Math.round(rest),maintenance:Math.round(maintenance),targets:reason?null:targets,reason,goalNote:isAdolescent?"Usia 17–18 memakai perkiraan kebutuhan energi untuk pertumbuhan; aplikasi tidak menerapkan defisit atau surplus otomatis.":goalAllowed?"Penyesuaian tujuan ±10% adalah asumsi awal prototype, bukan resep diet atau janji perubahan berat badan.":"Tujuan ini perlu ditinjau; aplikasi memakai perkiraan pemeliharaan tanpa penyesuaian."};
 }
 export function dayTotals(records:Submission[],day:string){
  const meals=records.filter(r=>r.meal&&jakartaDay(new Date(r.meal.eatenAt))===day);

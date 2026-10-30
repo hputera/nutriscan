@@ -1,4 +1,4 @@
-import {NextResponse} from "next/server";
+import {after,NextResponse} from "next/server";
 import {z} from "zod";
 import {submissionSchema,deleteHistorySchema} from "@/lib/validation";
 import {protect,allowRequest} from "@/lib/server";
@@ -10,7 +10,7 @@ import {saveReportQuery,deleteReportQuery} from "@/lib/report-queries";
 import {photoInput} from "@/lib/photo-rules";
 export const runtime="nodejs";export const maxDuration=90;
 export async function GET(request:Request){const denial=protect(request);if(denial)return denial;try{
- const owner=await requireSession(request);await cleanupPhotos(owner).catch(()=>{});const rows=await db()`SELECT id,created_at,payload,revision,photo_key FROM submissions WHERE session_id=${owner}::uuid ORDER BY created_at DESC LIMIT 200`;
+ const owner=await requireSession(request);after(async()=>{await cleanupPhotos(owner).catch(()=>{});});const rows=await db()`SELECT id,created_at,payload,revision,photo_key FROM submissions WHERE session_id=${owner}::uuid ORDER BY created_at DESC LIMIT 200`;
  return NextResponse.json({submissions:rows.map(r=>({...r.payload,id:r.id,createdAt:new Date(r.created_at).toISOString(),revision:r.revision,image:r.photo_key?"/api/photos/"+r.id:null,photoStored:Boolean(r.photo_key)}))},{headers:{"Cache-Control":"no-store"}});
  }catch(e){return sessionError(e);}}
 export async function POST(request:Request){const denial=protect(request);if(denial)return denial;let uploaded:string|null=null;let owner:string|null=null;let committed=false;try{

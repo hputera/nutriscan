@@ -6,7 +6,7 @@ Next.js/React untuk analisis nutrisi makanan, BMI, catatan harian dan pilihan me
 
 Node 22.16+. Untuk instalasi baru `npm ci`. Isi `.env.local` menggunakan `.env.example`, jalankan `npm run db:setup`, lalu `npm run dev`. Alamat lokal `http://127.0.0.1:3100`. Jangan commit `.env.local`.
 
-Untuk pembaruan project lama: pertahankan `.env.local`, pasang dependency baru dengan `npm install --ignore-scripts`, lalu mulai ulang server. Migrasi memakai CREATE/ALTER IF NOT EXISTS dan INSERT ON CONFLICT DO NOTHING agar laporan dan katalog yang sudah ada tidak ditimpa. `db:setup` juga memasukkan 46 profil makanan, dua snapshot katalog lama, dan 9 template menu.
+Untuk pembaruan project lama: pertahankan `.env.local`, pasang dependency baru dengan `npm install --ignore-scripts`, lalu mulai ulang server. Migrasi memakai CREATE/ALTER IF NOT EXISTS dan INSERT ON CONFLICT DO NOTHING agar laporan dan katalog yang sudah ada tidak ditimpa. `db:setup` juga memasukkan 78 profil makanan terkini, tiga snapshot katalog lama, dan 9 template menu.
 
 ## Sesi perangkat dan keluar profil
 
@@ -30,9 +30,9 @@ Nilai berasal dari Neon Object Storage, bukan password Postgres. Jalankan `npm r
 
 ## Rekomendasi menu
 
-Template menu dan katalog dibaca dari Neon. Pilihan disaring berdasarkan alergi/preferensi dan sisa kalori harian dari makanan tersimpan pada tanggal terpilih (WIB). Rendah <400 kkal, sedang 400–<650, tinggi >=650 per porsi contoh. Ini kategori prototype, bukan standar klinis. Setiap pilihan secara individual harus muat dalam sisa perkiraan; pengguna memilih satu alternatif, bukan menambahkan semuanya. Tidak ada pengecualian minimum 150 kkal yang bisa melampaui sisa. Komponen harian tanpa padanan menahan rekomendasi sampai dikoreksi. Saat target tercapai, menu tambahan tidak ditawarkan dan aplikasi tidak memerintahkan melewatkan makan.
+Template menu dan katalog dibaca dari Neon. Pilihan disaring berdasarkan alergi/preferensi dan sisa kalori harian dari makanan tersimpan pada tanggal terpilih (WIB). Rendah <400 kkal, sedang 400–<650, tinggi >=650 per porsi contoh. Ini kategori prototype, bukan standar klinis. Setiap pilihan secara individual harus muat dalam sisa perkiraan; pengguna memilih satu alternatif, bukan menambahkan semuanya. Tidak ada pengecualian minimum 150 kkal yang bisa melampaui sisa. Komponen harian tanpa data gizi menahan rekomendasi sampai dikoreksi. Saat target tercapai, menu tambahan tidak ditawarkan dan aplikasi tidak memerintahkan melewatkan makan.
 
-Perhitungan usia tetap mengikuti rentang yang didukung; hanya tulisan 18+ di halaman awal yang dihapus. Detail BMI/energi ada di [docs/personal-nutrition.md](docs/personal-nutrition.md). Data pangan masih 10 profil TKPI dan 36 profil estimasi; resep aktual, porsi dan bahan tersembunyi tetap perlu diperiksa.
+Perhitungan usia tetap mengikuti rentang yang didukung; hanya tulisan 18+ di halaman awal yang dihapus. Detail BMI/energi ada di [docs/personal-nutrition.md](docs/personal-nutrition.md). Data pangan memuat 42 profil TKPI dan 36 profil estimasi; resep aktual, porsi dan bahan tersembunyi tetap perlu diperiksa.
 
 ## Hapus riwayat
 
@@ -49,3 +49,5 @@ Bisa satu atau semua, dengan konfirmasi UI. Penghapusan hanya untuk sesi aktif, 
 ## GitHub/hosting
 
 Commit source dan package-lock.json. Jangan commit node_modules, .next, .env.local, backup atau credential. Host harus menjalankan server Next.js. Atur PROTOTYPE_ACCESS_CODE jika dipublikasikan dengan kredensial live. Ini belum login produksi atau layanan rekomendasi diet klinis.
+
+Panduan deployment manual: [docs/deploy-vercel.md](docs/deploy-vercel.md).

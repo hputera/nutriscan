@@ -6,11 +6,12 @@ import {db,databaseCatalogs} from "@/lib/db";
 import {submissionSchema} from "@/lib/validation";
 import {reportPayload} from "@/lib/report";
 import {storageReady,uploadPhoto,cleanupPhotos} from "@/lib/storage";
+import {MIGRATION_BATCH_SIZE,MIGRATION_MAX_BYTES} from "@/lib/upload-limits";
 import {photoInput} from "@/lib/photo-rules";
 export const runtime="nodejs";export const maxDuration=90;
 export async function POST(request:Request){const denial=protect(request);if(denial)return denial;try{
- const owner=await requireSession(request);if(Number(request.headers.get("content-length")??0)>6000000)return NextResponse.json({error:"Pindahkan maksimal 10 catatan sekali kirim."},{status:413});
- const body=await request.json();if(!Array.isArray(body.records)||body.records.length>10)return NextResponse.json({error:"Daftar migrasi tidak valid."},{status:400});
+ const owner=await requireSession(request);if(Number(request.headers.get("content-length")??0)>MIGRATION_MAX_BYTES)return NextResponse.json({error:"Pindahkan maksimal 5 catatan sekali kirim."},{status:413});
+ const body=await request.json();if(!Array.isArray(body.records)||body.records.length>MIGRATION_BATCH_SIZE)return NextResponse.json({error:"Daftar migrasi tidak valid."},{status:400});
  await databaseCatalogs();const sql=db();const accepted:string[]=[],deleted:string[]=[],photosStored:string[]=[],failed:string[]=[];
  for(const raw of body.records){const parsed=submissionSchema.safeParse(raw);if(!parsed.success){failed.push(typeof raw?.id==="string"?raw.id:"invalid");continue;}const record=parsed.data;
   const tomb=await sql`SELECT id FROM submission_tombstones WHERE session_id=${owner}::uuid AND id=${record.id}::uuid UNION ALL SELECT id FROM nutriscan_sessions WHERE id=${owner}::uuid AND history_cleared_at>=${record.createdAt}::timestamptz`;if(tomb.length){deleted.push(record.id);continue;}

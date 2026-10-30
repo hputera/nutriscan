@@ -1,14 +1,14 @@
 import "server-only";
+import {requestOrigin} from "./request-origin";
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 
 export function protect(request: Request): NextResponse | null {
  // Next.js may normalize request.url to localhost while the browser uses 127.0.0.1.
  // Use the incoming Host while preserving strict same-origin checks.
- const requestUrl = new URL(request.url);
  let browserUrl: URL;
  try {
-  browserUrl = new URL(requestUrl.protocol + "//" + (request.headers.get("host") || requestUrl.host));
+  browserUrl = requestOrigin(request);
  } catch {
   return NextResponse.json({error:"Alamat permintaan tidak valid."},{status:400});
  }

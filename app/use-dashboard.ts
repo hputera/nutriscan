@@ -4,6 +4,9 @@ import { CURRENT_CATALOG_VERSION,installCatalogs } from "@/lib/catalog";
 import { summarize,versionForRecord,metadataFor } from "@/lib/nutrition";
 import { analysisSchema,profileSchema,mealSchema } from "@/lib/validation";
 import { dayTotals,jakartaDay,localMealTime,planFor,recommendations } from "@/lib/personal";
+import {saveWithConfirmation} from "@/lib/save-confirmation";
+import {responseData} from "@/lib/client-response";
+import {MIGRATION_BATCH_SIZE} from "@/lib/upload-limits";
 import type { Analysis,CatalogVersion,Submission,UserProfile,MealType,Nutrients,MenuTemplate } from "@/lib/types";
 const EMPTY:Analysis={items:[],source:"manual",title:"Makanan baru",summary:"Unggah foto makanan atau isi komponen dan porsi secara manual."};
 const ZERO:Nutrients={calories:0,protein:0,carbs:0,fat:0,fiber:0};
@@ -16,15 +19,16 @@ export function useDashboard(){
  const [editingId,setEditingId]=useState<string|null>(null);const [records,setRecords]=useState<Submission[]>([]);const [status,setStatus]=useState({gemini:false,database:false,photos:false,accessCodeRequired:false});const [code,setCode]=useState("");
  const [day,setDay]=useState("");const [eatenAt,setEatenAt]=useState("");const [mealType,setMealType]=useState<MealType>("lunch");
  const [modal,setModal]=useState<"profile"|"edit"|"history"|"method"|"camera"|"access"|null>(null);
- const [busy,setBusy]=useState(false);const [saving,setSaving]=useState(false);const [saved,setSaved]=useState(false);const [error,setError]=useState("");const [notice,setNotice]=useState("");const [cloudLoading,setCloudLoading]=useState(false);
+ const [preparingPhoto,setPreparingPhoto]=useState(false);const [busy,setBusy]=useState(false);const [saving,setSaving]=useState(false);const [saved,setSaved]=useState(false);const [error,setError]=useState("");const [notice,setNotice]=useState("");const [cloudLoading,setCloudLoading]=useState(false);
  const [cameraError,setCameraError]=useState("");const [cameraReady,setCameraReady]=useState(false);
  const uploadRef=useRef<HTMLInputElement>(null);const captureRef=useRef<HTMLInputElement>(null);const videoRef=useRef<HTMLVideoElement>(null);const fileRef=useRef<File|null>(null);const sessionRef=useRef("");const scanAbort=useRef<AbortController|null>(null);const selectionRef=useRef(0);
+ const draftIdentity=useRef<{id:string;createdAt:string;revision:number}|null>(null);
  const totals=useMemo(()=>summarize(analysis.items,activeCatalogVersion),[analysis.items,activeCatalogVersion]);
  const plan=useMemo(()=>profile?planFor(profile):null,[profile]);const daily=useMemo(()=>dayTotals(records,day),[records,day]);
  const ideas=useMemo(()=>profile?recommendations(profile,daily.nutrients,plan?.targets??null,menus,daily.unmatched>0||!dataReady):{message:"Isi profil terlebih dahulu.",remaining:null,groups:[],items:[]},[profile,daily.nutrients,plan,menus,daily.unmatched,dataReady]);
  const hasResults=analysis.items.length>0;
  useEffect(()=>{setDay(jakartaDay());setEatenAt(localMealTime(new Date().toISOString()));void boot();return()=>scanAbort.current?.abort();},[]);
- async function jsonRequest(url:string,options:RequestInit={},access?:string){const response=await fetch(url,{...options,headers:{"x-prototype-code":access??code,...options.headers},signal:options.signal??AbortSignal.timeout(25000)});const data=await response.json();if(!response.ok)throw new Error(data.error??"Permintaan belum berhasil.");return data;}
+ async function jsonRequest(url:string,options:RequestInit={},access?:string){const response=await fetch(url,{...options,headers:{"x-prototype-code":access??code,...options.headers},signal:options.signal??AbortSignal.timeout(25000)});return await responseData(response) as any;}
  function pendingPhotos():Record<string,string>{try{return JSON.parse(localStorage.getItem("nutriscan-photo-pending")??"{}");}catch{return {};}}
  function storePending(value:Record<string,string>){try{if(Object.keys(value).length)localStorage.setItem("nutriscan-photo-pending",JSON.stringify(value));else localStorage.removeItem("nutriscan-photo-pending");}catch{setError("Salinan foto sementara tidak bisa disimpan. Aktifkan Object Storage sebelum menutup halaman.");}}
  async function thumbnail(source:string){const img=new Image();img.src=source;await img.decode();const cv=document.createElement("canvas");const ratio=Math.min(1,640/Math.max(img.width,img.height));cv.width=Math.max(1,Math.round(img.width*ratio));cv.height=Math.max(1,Math.round(img.height*ratio));cv.getContext("2d")?.drawImage(img,0,0,cv.width,cv.height);return cv.toDataURL("image/jpeg",.72);}
@@ -33,7 +37,7 @@ export function useDashboard(){
   let old:Submission[]=[];try{const raw=JSON.parse(localStorage.getItem("nutriscan-history")??"[]");if(Array.isArray(raw))old=raw;}catch{}
   const pending=pendingPhotos();for(const r of old)if(r?.id&&r.image)pending[r.id]=r.image;storePending(pending);
   if(!cloudProfile){try{const parsed=profileSchema.safeParse(JSON.parse(localStorage.getItem("nutriscan-profile")??"null"));if(parsed.success){const data=await jsonRequest("/api/profile",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(parsed.data)},access);cloudProfile=data.profile;localStorage.removeItem("nutriscan-profile");}}catch{setNotice("Profil lama belum berhasil dipindahkan. Salinan browser tetap tersedia.");}}
-  const completed=new Set<string>();for(let index=0;index<old.length;index+=10){const batch=old.slice(index,index+10);const payload=await Promise.all(batch.map(async r=>({...r,photoData:photos&&r.image?await thumbnail(r.image).catch(()=>undefined):undefined})));
+  const completed=new Set<string>();for(let index=0;index<old.length;index+=MIGRATION_BATCH_SIZE){const batch=old.slice(index,index+MIGRATION_BATCH_SIZE);const payload=await Promise.all(batch.map(async r=>({...r,photoData:photos&&r.image?await thumbnail(r.image).catch(()=>undefined):undefined})));
    const data=await jsonRequest("/api/migrate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({records:payload}),signal:AbortSignal.timeout(90000)},access);
    for(const id of [...data.accepted,...data.deleted])completed.add(id);for(const id of [...data.photosStored,...data.deleted])delete pending[id];storePending(pending);
    try{const remaining=old.filter(r=>!completed.has(r.id));if(remaining.length)localStorage.setItem("nutriscan-history",JSON.stringify(remaining));else localStorage.removeItem("nutriscan-history");}catch{}
@@ -57,21 +61,23 @@ export function useDashboard(){
  return()=>{cancelled=true;stream?.getTracks().forEach(t=>t.stop());};},[modal]);
  function headers(){return {"x-prototype-code":code};}
  function markChanged(){setSaved(false);setError("");setNotice("");}
- function resetMeal(){setEditingId(null);scanAbort.current?.abort();selectionRef.current++;setBusy(false);setAnalysis({...EMPTY,items:[]});setImage(null);fileRef.current=null;setActiveCatalogVersion(CURRENT_CATALOG_VERSION);setEatenAt(localMealTime(new Date().toISOString()));markChanged();}
+ function resetMeal(){draftIdentity.current=null;setPreparingPhoto(false);setEditingId(null);scanAbort.current?.abort();selectionRef.current++;setBusy(false);setAnalysis({...EMPTY,items:[]});setImage(null);fileRef.current=null;setActiveCatalogVersion(CURRENT_CATALOG_VERSION);setEatenAt(localMealTime(new Date().toISOString()));markChanged();}
  async function loadPhoto(file:File){
+  if(saving)return;
   if(!["image/jpeg","image/png","image/webp"].includes(file.type)){setError("Gunakan foto JPG, PNG, atau WebP.");return;}
   if(file.size>15*1024*1024){setError("Pilih foto di bawah 15 MB.");return;}
-  scanAbort.current?.abort();const selection=++selectionRef.current;setBusy(false);markChanged();
+  scanAbort.current?.abort();const selection=++selectionRef.current;setBusy(false);setPreparingPhoto(true);markChanged();
   try{const bitmap=await createImageBitmap(file);const scale=Math.min(1,1024/Math.max(bitmap.width,bitmap.height));const canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));const ctx=canvas.getContext("2d");if(!ctx)throw new Error();ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();const preview=canvas.toDataURL("image/jpeg",.8);const blob=await new Promise<Blob|null>(r=>canvas.toBlob(r,"image/jpeg",.8));if(!blob)throw new Error();if(selection!==selectionRef.current)return;
-   setEditingId(null);fileRef.current=new File([blob],"meal.jpg",{type:"image/jpeg"});setImage(preview);setAnalysis({...EMPTY,items:[]});setActiveCatalogVersion(CURRENT_CATALOG_VERSION);setEatenAt(localMealTime(new Date().toISOString()));
+   draftIdentity.current=null;setEditingId(null);fileRef.current=new File([blob],"meal.jpg",{type:"image/jpeg"});setImage(preview);setAnalysis({...EMPTY,items:[]});setActiveCatalogVersion(CURRENT_CATALOG_VERSION);setEatenAt(localMealTime(new Date().toISOString()));
    if(!status.gemini)setNotice("Foto siap. Gunakan Isi makanan manual sampai layanan scan terhubung.");
-  }catch{if(selection===selectionRef.current)setError("Foto tidak bisa dibuka. Coba foto lain.");}
+  }catch{if(selection===selectionRef.current)setError("Foto tidak bisa dibuka. Coba foto lain.");}finally{if(selection===selectionRef.current)setPreparingPhoto(false);}
  }
  async function analyzePhoto(){
+  if(saving||preparingPhoto||busy)return;
   const controller=new AbortController();scanAbort.current?.abort();scanAbort.current=controller;setBusy(true);markChanged();
   const progress=setTimeout(()=>{if(!controller.signal.aborted)setNotice("Analisis masih berjalan. Foto tetap tersedia; tunggu sekitar satu menit.");},12000);
-  try{let file=fileRef.current;if(!file&&image?.startsWith("/demo/")){const blob=await fetch(image,{signal:controller.signal}).then(r=>r.blob());file=new File([blob],"meal.jpg",{type:"image/jpeg"});}if(!file)throw new Error("Unggah foto baru untuk dianalisis.");const data=new FormData();data.append("image",file);
-   const response=await fetch("/api/analyze",{method:"POST",headers:headers(),body:data,signal:AbortSignal.any([controller.signal,AbortSignal.timeout(75000)])});const result=await response.json();if(!response.ok)throw new Error(result.error??"Analisis belum berhasil.");const parsed=analysisSchema.safeParse(result.analysis);if(!parsed.success)throw new Error("Hasil belum valid. Coba lagi.");if(controller.signal.aborted)return;
+  try{let file=fileRef.current;if(!file&&(image?.startsWith("/demo/")||image?.startsWith("/api/photos/"))){const blob=await fetch(image,{signal:controller.signal}).then(r=>r.blob());file=new File([blob],"meal.jpg",{type:"image/jpeg"});}if(!file)throw new Error("Unggah foto baru untuk dianalisis.");const data=new FormData();data.append("image",file);
+   const response=await fetch("/api/analyze",{method:"POST",headers:headers(),body:data,signal:AbortSignal.any([controller.signal,AbortSignal.timeout(75000)])});const result=await responseData(response);const parsed=analysisSchema.safeParse(result.analysis);if(!parsed.success)throw new Error("Hasil belum valid. Coba lagi.");if(controller.signal.aborted)return;
    setAnalysis(parsed.data);setActiveCatalogVersion(CURRENT_CATALOG_VERSION);setNotice("Periksa jenis makanan dan berat porsi, lalu simpan ke catatan harian.");
   }catch(e){if(controller.signal.aborted)return;setNotice("");setError(e instanceof Error&&e.name==="TimeoutError"?"Analisis melewati batas waktu. Coba lagi sebentar.":e instanceof Error?e.message:"Analisis belum berhasil.");}
   finally{clearTimeout(progress);if(!controller.signal.aborted)setBusy(false);}
@@ -79,24 +85,31 @@ export function useDashboard(){
  function capturePhoto(){const video=videoRef.current;if(!video?.videoWidth)return;const canvas=document.createElement("canvas");canvas.width=video.videoWidth;canvas.height=video.videoHeight;canvas.getContext("2d")?.drawImage(video,0,0);canvas.toBlob(blob=>{if(blob)void loadPhoto(new File([blob],"camera.jpg",{type:"image/jpeg"}));},"image/jpeg",.9);setModal(null);}
  async function saveProfile(value:UserProfile){setProfileSaving(true);setError("");try{await jsonRequest("/api/session",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});const data=await jsonRequest("/api/profile",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(value)});setProfile(data.profile);setCanResume(true);try{localStorage.removeItem("nutriscan-profile");}catch{}setModal(null);await cloudRecords(code);}catch(e){setError(e instanceof Error?e.message:"Profil belum berhasil disimpan di Neon.");}finally{setProfileSaving(false);}}
  async function saveResult(){
-  if(!hasResults||saving||saved)return;const iso=new Date(eatenAt+":00+07:00");if(!Number.isFinite(iso.getTime())){setError("Isi tanggal dan waktu makan yang valid.");return;}
+  if(!hasResults||saving||saved||preparingPhoto||busy)return;const iso=new Date(eatenAt+":00+07:00");if(!Number.isFinite(iso.getTime())){setError("Isi tanggal dan waktu makan yang valid.");return;}
   setSaving(true);setError("");setNotice("");const previous=records.find(r=>r.id===editingId);
-  const record:Submission={id:editingId??crypto.randomUUID(),createdAt:previous?.createdAt??new Date().toISOString(),revision:previous?.revision??0,analysis:structuredClone(analysis),image:null,catalogVersion:activeCatalogVersion,reportVersion:2,meal:{eatenAt:iso.toISOString(),mealType,targets:plan?.targets??ZERO}};
+  const identity=draftIdentity.current??(draftIdentity.current={id:editingId??crypto.randomUUID(),createdAt:previous?.createdAt??new Date().toISOString(),revision:previous?.revision??0});
+  const record:Submission={id:identity.id,createdAt:identity.createdAt,revision:identity.revision,analysis:structuredClone(analysis),image:null,catalogVersion:activeCatalogVersion,reportVersion:2,meal:{eatenAt:iso.toISOString(),mealType,targets:plan?.targets??ZERO}};
   try{const photoData=image&&!image.startsWith("/api/photos/")?await thumbnail(image):undefined;
-   const data=await jsonRequest("/api/submissions",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...record,photoData}),signal:AbortSignal.timeout(90000)});
-   if(data.photoPending&&photoData){const pending=pendingPhotos();pending[record.id]=photoData;storePending(pending);}else if(data.photoStored){const pending=pendingPhotos();delete pending[record.id];storePending(pending);}
-   await cloudRecords(code);setEditingId(record.id);setSaved(true);setDay(jakartaDay(iso));setNotice(data.photoPending?"Catatan tersimpan di Neon. Foto menunggu konfigurasi Object Storage; salinan sementara ada di browser.":"Catatan tersimpan di Neon"+(data.photoStored?" beserta foto online.":"."));
+   const outcome=await saveWithConfirmation(record,{
+    hasPhoto:Boolean(photoData),save:()=>jsonRequest("/api/submissions",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...record,photoData}),signal:AbortSignal.timeout(90000)}),load:()=>cloudRecords(code),
+    confirm:data=>{
+     identity.revision=data.revision;setEditingId(record.id);setSaved(true);setDay(jakartaDay(iso));
+     setRecords(old=>[{...record,revision:data.revision,image:data.image??image,photoStored:data.photoStored,photoPending:data.photoPending},...old.filter(r=>r.id!==record.id)]);
+     const pending=pendingPhotos();if(data.photoPending&&photoData)pending[record.id]=photoData;else if(data.photoStored)delete pending[record.id];storePending(pending);
+    }
+   });
+   setNotice(outcome.refreshFailed?"Catatan sudah tersimpan di Neon. Riwayat belum berhasil dimuat ulang; coba Muat dari Neon.":outcome.ack.photoPending?"Catatan tersimpan di Neon. Foto menunggu konfigurasi Object Storage; salinan sementara ada di browser.":"Catatan tersimpan di Neon"+(outcome.ack.photoStored?" beserta foto online.":"."));
   }catch(e){setError(e instanceof Error?e.message:"Catatan belum berhasil disimpan. Foto dan isian tetap tersedia.");}finally{setSaving(false);}
  }
- async function syncHistory(){setCloudLoading(true);setError("");try{await cloudRecords(code);}catch(e){setError(e instanceof Error?e.message:"Riwayat belum bisa dimuat.");}finally{setCloudLoading(false);}}
+ async function syncHistory(){if(saving)return;setCloudLoading(true);setError("");try{await cloudRecords(code);}catch(e){setError(e instanceof Error?e.message:"Riwayat belum bisa dimuat.");}finally{setCloudLoading(false);}}
  async function deleteHistory(){if(!deleteTarget||deleting)return;setDeleting(true);setError("");try{const data=await jsonRequest("/api/submissions",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify(deleteTarget==="all"?{all:true,confirm:true}:{id:deleteTarget,confirm:true}),signal:AbortSignal.timeout(90000)});
    const ids=new Set<string>(deleteTarget==="all"?[...records.map(r=>r.id),...data.ids]:[deleteTarget,...data.ids]);setRecords(old=>old.filter(r=>!ids.has(r.id)));const pending=pendingPhotos();for(const id of ids)delete pending[id];if(deleteTarget==="all")for(const id of Object.keys(pending))delete pending[id];storePending(pending);
    try{const old=JSON.parse(localStorage.getItem("nutriscan-history")??"[]");const kept=Array.isArray(old)?old.filter((r:Submission)=>!ids.has(r.id)&&deleteTarget!=="all"):[];if(kept.length)localStorage.setItem("nutriscan-history",JSON.stringify(kept));else localStorage.removeItem("nutriscan-history");}catch{}
    if(deleteTarget==="all"||(editingId&&ids.has(editingId)))resetMeal();setDeleteTarget(null);setNotice(`${data.deleted} catatan dihapus.`+(data.pendingPhotoDeletes?" Pembersihan file foto masih dalam antrean; foto sudah tidak bisa diakses dari riwayat.":" Foto terkait ikut dibersihkan."));
   }catch(e){setError(e instanceof Error?e.message:"Penghapusan belum berhasil; data tetap tersedia.");}finally{setDeleting(false);}
  }
- function openRecord(r:Submission){setEditingId(r.id);scanAbort.current?.abort();selectionRef.current++;setBusy(false);setAnalysis(r.analysis);setActiveCatalogVersion(versionForRecord(r));setImage(r.image);fileRef.current=null;setSaved(true);if(r.meal){setEatenAt(localMealTime(r.meal.eatenAt));setMealType(r.meal.mealType);}setModal(null);setError("");setNotice("Menampilkan catatan tersimpan; angka memakai versi katalog saat disimpan.");}
+ function openRecord(r:Submission){if(saving||preparingPhoto)return;draftIdentity.current={id:r.id,createdAt:r.createdAt,revision:r.revision??0};setEditingId(r.id);scanAbort.current?.abort();selectionRef.current++;setBusy(false);setAnalysis(r.analysis);setActiveCatalogVersion(versionForRecord(r));setImage(r.image);fileRef.current=null;setSaved(true);if(r.meal){setEatenAt(localMealTime(r.meal.eatenAt));setMealType(r.meal.mealType);}setModal(null);setError("");setNotice("Menampilkan catatan tersimpan; angka memakai versi katalog saat disimpan.");}
  function exportRecord(record?:Submission){const a=record?.analysis??analysis;const version=record?versionForRecord(record):activeCatalogVersion;const total=summarize(a.items,version);const result={app:"NutriScan",exportedAt:new Date().toISOString(),analysis:a,catalogVersion:version,meal:record?.meal?{...record.meal,profile:undefined}:{eatenAt,mealType},nutrients:total.nutrients,incomplete:total.unmatched>0,reference:metadataFor(version)};const url=URL.createObjectURL(new Blob([JSON.stringify(result,null,2)],{type:"application/json"}));const aLink=document.createElement("a");aLink.href=url;aLink.download="nutriscan-"+(day||"hasil")+".json";aLink.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
  function saveCode(c:string){setCode(c);try{sessionStorage.setItem("nutriscan-code",c);}catch{}setModal(null);void boot();}
- return {ready,dataReady,menus,canResume,profileSaving,resumeProfile,logout,boot,deleteTarget,setDeleteTarget,deleting,deleteHistory,profile,saveProfile,analysis,setAnalysis,image,activeCatalogVersion,setActiveCatalogVersion,records,status,code,day,setDay,eatenAt,setEatenAt,mealType,setMealType,modal,setModal,busy,saving,saved,error,setError,notice,setNotice,cloudLoading,cameraError,cameraReady,setCameraReady,uploadRef,captureRef,videoRef,totals,plan,daily,ideas,hasResults,markChanged,resetMeal,loadPhoto,analyzePhoto,capturePhoto,saveResult,syncHistory,openRecord,exportRecord,saveCode};
+ return {ready,dataReady,menus,canResume,profileSaving,resumeProfile,logout,boot,deleteTarget,setDeleteTarget,deleting,deleteHistory,profile,saveProfile,analysis,setAnalysis,image,activeCatalogVersion,setActiveCatalogVersion,records,status,code,day,setDay,eatenAt,setEatenAt,mealType,setMealType,modal,setModal,preparingPhoto,busy,saving,saved,error,setError,notice,setNotice,cloudLoading,cameraError,cameraReady,setCameraReady,uploadRef,captureRef,videoRef,totals,plan,daily,ideas,hasResults,markChanged,resetMeal,loadPhoto,analyzePhoto,capturePhoto,saveResult,syncHistory,openRecord,exportRecord,saveCode};
 }

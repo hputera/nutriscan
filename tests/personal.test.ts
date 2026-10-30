@@ -16,7 +16,7 @@ test("Mifflin formula, explicit activity assumptions and 20/50/30 target convers
  assert.ok(Math.abs(bmiFor(profile).value-22.857142857)<1e-8);
  assert.equal(planFor({...profile,sex:"female"}).rest,1483);
 });
-test("BMI categories use unrounded boundaries and avoid adult category at 18-19",()=>{
+test("BMI categories use unrounded boundaries and avoid adult category at 17-19",()=>{
  assert.equal(bmiFor({age:30,heightCm:200,weightKg:74}).label,"Rentang berat badan sehat");
  assert.equal(bmiFor({age:30,heightCm:200,weightKg:100}).label,"Berat badan berlebih");
  assert.equal(bmiFor({age:30,heightCm:200,weightKg:120}).label,"Rentang obesitas");
@@ -24,7 +24,7 @@ test("BMI categories use unrounded boundaries and avoid adult category at 18-19"
 });
 test("personal target is withheld for special care and unsupported age; underweight does not get a deficit",()=>{
  assert.equal(planFor({...profile,specialCare:true}).targets,null);
- assert.equal(planFor({...profile,age:18}).targets,null);
+ assert.equal(planFor({...profile,age:16}).targets,null);
  assert.equal(planFor({...profile,age:79}).targets,null);
  const p={...profile,heightCm:180,weightKg:50};assert.deepEqual(planFor({...p,goal:"lose"}).targets,planFor(p).targets);
  const large={...profile,weightKg:100,heightCm:170};assert.deepEqual(planFor({...large,goal:"gain"}).targets,planFor(large).targets);
@@ -45,7 +45,7 @@ test("WIB day totals count stored meals once, use their catalog version, and exc
  assert.equal(jakartaDay(new Date("2026-10-29T17:00:00Z")),"2026-10-30");assert.equal(localMealTime("2026-10-29T17:00:00Z"),"2026-10-30T00:00");
 });
 test("adult profile and personal report validate without any school or price fields",()=>{
- assert.equal(profileSchema.safeParse({...profile,age:17}).success,false);assert.equal(profileSchema.safeParse({...profile,heightCm:0}).success,false);assert.equal(profileSchema.safeParse({...profile,allergies:["unmapped"]}).success,false);
+ assert.equal(profileSchema.safeParse({...profile,age:16}).success,false);assert.equal(profileSchema.safeParse({...profile,heightCm:0}).success,false);assert.equal(profileSchema.safeParse({...profile,allergies:["unmapped"]}).success,false);
  const result=submissionSchema.parse({id:"f5c6f354-c3ac-4d65-b19d-3d51741a09ec",createdAt:"2026-10-29T12:00:00Z",analysis:{items:[],source:"manual",title:"Makanan",summary:""},catalogVersion:"personal-v3",reportVersion:2,meal:{eatenAt:"2026-10-29T12:00:00Z",mealType:"lunch",targets:planFor(profile).targets}});
  assert.ok("meal" in result);assert.equal("settings" in result,false);
 });
@@ -76,7 +76,7 @@ test("unmatched daily foods block menu budgeting instead of claiming a false rem
 });
 
 test("unavailable target is distinct from exhausted calories and shows the actual profile reason",()=>{
- for(const p of [{...profile,age:18},{...profile,specialCare:true},{...profile,age:100}]){
+ for(const p of [{...profile,age:16},{...profile,specialCare:true},{...profile,age:100}]){
   const plan=planFor(p);const r=recommendations(p,zero,plan.targets,menus);
   assert.equal(r.remaining,null);assert.equal(r.groups.length,0);assert.equal(r.message,plan.reason);
  }
@@ -94,4 +94,24 @@ test("new food saves reduce the same day's allowance, replacement and deletion d
  assert.equal(allowance([second]),target.calories-193);
  assert.equal(allowance([first,make("other-day","rendang-sapi",100,"2026-10-31T05:00:00Z")]),target.calories-114);
  assert.equal(allowance([first,make("unknown","not-in-catalog",100)]),null);
+});
+
+test("age 17 profile activates growth-energy targets without automatic weight-loss adjustments",()=>{
+ for(const age of [17,18]){
+  const parsed=profileSchema.parse({...profile,age,goal:"lose"});assert.equal(parsed.goal,"maintain");
+  const plan=planFor(parsed);assert.ok(plan.targets);assert.equal(plan.rest,null);assert.equal(plan.reason,"");assert.equal(plan.isAdolescent,true);
+  for(const goal of ["maintain","lose","gain"] as const)assert.deepEqual(planFor({...parsed,goal}).targets,plan.targets);
+  const ideas=recommendations(parsed,zero,plan.targets,menus);assert.equal(ideas.remaining,plan.targets!.calories);assert.ok(ideas.items.length>0);
+  assert.equal(planFor({...parsed,specialCare:true}).targets,null);assert.match(bmiFor(parsed).label,/mulai usia 20/);
+ }
+ assert.equal(profileSchema.safeParse({...profile,age:16}).success,false);assert.equal(planFor({...profile,age:16}).targets,null);
+ assert.equal(planFor({...profile,age:19}).isAdolescent,false);
+});
+test("adolescent EER has sex-specific equations for all four activity categories with height in cm",()=>{
+ const male=[2830,3030,3340,3730],female=[2030,2260,2400,2720];
+ for(const [i,activity] of (["low","light","moderate","high"] as const).entries()){
+  assert.equal(planFor({...profile,age:17,activity}).targets?.calories,male[i]);
+  assert.equal(planFor({...profile,age:17,sex:"female",heightCm:165,weightKg:55,activity}).targets?.calories,female[i]);
+ }
+ assert.equal(planFor({...profile,age:18}).targets?.calories,2840);
 });
