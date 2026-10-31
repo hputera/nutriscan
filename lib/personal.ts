@@ -99,7 +99,7 @@ export function planFor(p: UserProfile) {
         ? 1.1
         : 1
     : 1;
-  const energy = Math.round((maintenance * adjustment) / 10) * 10;
+  const energy = p.calorieTarget ?? Math.round((maintenance * adjustment) / 10) * 10;
   if (!reason && (energy < 1500 || energy > 4500))
     reason =
       "Hasil perkiraan berada di luar rentang target prototype. Tinjau kebutuhan bersama ahli gizi.";
@@ -115,6 +115,7 @@ export function planFor(p: UserProfile) {
       ? { ...bmi, label: "BMI memerlukan interpretasi khusus" }
       : bmi,
     isAdolescent,
+    customTarget: p.calorieTarget !== undefined,
     rest: rest === null ? null : Math.round(rest),
     maintenance: Math.round(maintenance),
     targets: reason ? null : targets,

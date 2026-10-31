@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 export const metadata: Metadata = {
-  title: "NutriScan | Nutrisi & Pilihan Makananmu",
+  title: "YellowScan | Nutrisi & Pilihan Makananmu",
   description:
     "Kenali nutrisi makanan, catat asupan harian, hitung BMI, dan temukan ide menu berdasarkan profilmu.",
 };

@@ -7,15 +7,24 @@ const nutrientSchema = z.object({
   fat: z.number().min(1).max(200),
   fiber: z.number().min(1).max(100),
 });
+export const manualNutrientsSchema = z.object({
+  calories: z.number().min(0).max(1000),
+  protein: z.number().min(0).max(100),
+  carbs: z.number().min(0).max(100),
+  fat: z.number().min(0).max(100),
+  fiber: z.number().min(0).max(100),
+}).refine(n => n.protein + n.carbs + n.fat <= 100.5, "Periksa gizi per 100 gram.");
 export const itemSchema = z
   .object({
     foodId: z.string().max(80).nullable(),
     label: z.string().trim().min(1).max(100),
     grams: z.number().min(1).max(1500),
     uncertain: z.boolean().optional(),
+    customNutrients: manualNutrientsSchema.optional(),
   })
   .transform((item) => ({
     ...item,
+    customNutrients: item.foodId && FOODS.some(f => f.id === item.foodId) ? undefined : item.customNutrients,
     foodId: FOODS.some((f) => f.id === item.foodId) ? item.foodId : null,
   }));
 export const settingsSchema = z.object({
@@ -42,7 +51,7 @@ export const legacySubmissionSchema = z.object({
 const recognizedItemSchema = itemSchema.transform((item) => {
   const foodId =
     matchFoodId(item.foodId, item.label) ?? matchFoodId(null, item.label);
-  return { ...item, foodId, uncertain: item.uncertain || foodId === null };
+  return { ...item, customNutrients: undefined, foodId, uncertain: item.uncertain || foodId === null };
 });
 export const recognitionSchema = z.object({
   is_food: z.boolean(),
@@ -76,6 +85,7 @@ export const profileSchema = z
       .max(8),
     restrictions: z.string().trim().max(300),
     specialCare: z.boolean(),
+    calorieTarget: z.number().int().min(1500).max(4500).optional(),
   })
   .transform((profile) => ({
     ...profile,

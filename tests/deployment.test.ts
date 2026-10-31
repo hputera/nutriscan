@@ -224,3 +224,10 @@ test("photo cleanup failures remain queued and an expired budget stops the next 
   );
   assert.deepEqual(forgotten, ["ok"]);
 });
+
+test("lost reply cannot confirm a different manual nutrition value",async()=>{
+ const custom={...record,analysis:{...record.analysis,items:[{foodId:null,label:"Resep",grams:100,customNutrients:{calories:200,protein:10,carbs:20,fat:8,fiber:2}}]}};
+ const changed={...custom,analysis:{...custom.analysis,items:[{...custom.analysis.items[0],customNutrients:{...custom.analysis.items[0].customNutrients,calories:300}}]}};
+ const failure=new Error("reply lost");
+ await assert.rejects(saveWithConfirmation(custom,{hasPhoto:false,save:async()=>{throw failure;},load:async()=>[changed],confirm:()=>assert.fail("different nutrition confirmed")}),e=>e===failure);
+});

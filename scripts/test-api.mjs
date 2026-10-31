@@ -125,6 +125,13 @@ try {
     specialCare: false,
   };
   assert.equal((await a.request("/api/profile", "PUT", profile)).status, 200);
+  const manualProfile = {...profile,calorieTarget:2100};
+  const profileReply=await a.request("/api/profile","PUT",manualProfile);
+  assert.equal(profileReply.status,200);
+  assert.equal((await profileReply.json()).targets.calories,2100);
+  const reloadedProfile=await a.request("/api/profile").then(r=>r.json());
+  assert.equal(reloadedProfile.profile.calorieTarget,2100);
+  assert.equal(reloadedProfile.targets.calories,2100);
   const teenReply = await b.request("/api/profile", "PUT", {
     ...profile,
     age: 17,
@@ -139,7 +146,7 @@ try {
     id: randomUUID(),
     createdAt: new Date().toISOString(),
     analysis: {
-      items: [{ foodId: "nasi", label: "Nasi putih", grams: 150 }],
+      items: [{ foodId: null, label: "Resep manual", grams: 150, customNutrients:{calories:250,protein:10,carbs:30,fat:10,fiber:3} }],
       source: "manual",
       title: "Synthetic test",
       summary: "",
@@ -160,6 +167,11 @@ try {
   const saved = await response.json();
   assert.equal(saved.photoStored, true);
   assert.equal(saved.revision, 1);
+  const reloadedMeal=(await a.request("/api/submissions").then(r=>r.json())).submissions.find(r=>r.id===data.id);
+  assert.deepEqual(reloadedMeal.analysis.items[0].customNutrients,data.analysis.items[0].customNutrients);
+  const reportRows=await sql`SELECT payload FROM submissions WHERE id=${data.id}::uuid AND session_id=${owners[0]}::uuid`;
+  assert.equal(reportRows[0].payload.nutrients.calories,375);
+
   response = await a.request("/api/photos/" + data.id, "GET", undefined, {
     withoutCode: true,
   });

@@ -15,6 +15,7 @@ export type FoodItem = {
   label: string;
   grams: number;
   uncertain?: boolean;
+  customNutrients?: Nutrients; // Per 100 g, entered manually by the user.
 };
 export type Ingredient = { name: string; grams: number; pricePerKg: number };
 export type NutritionReference = {
@@ -75,6 +76,7 @@ export type UserProfile = {
   allergies: string[];
   restrictions: string;
   specialCare: boolean;
+  calorieTarget?: number;
 };
 export type MealSnapshot = {
   eatenAt: string;

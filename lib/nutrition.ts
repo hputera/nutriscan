@@ -67,12 +67,13 @@ export function summarize(
   let unmatched = 0;
   for (const item of items) {
     const food = foodFor(item.foodId, version);
-    if (!food) {
+    const per100g = food?.per100g ?? item.customNutrients;
+    if (!per100g) {
       unmatched++;
       continue;
     }
     for (const key of NUTRIENT_KEYS)
-      nutrients[key] += (food.per100g[key] * item.grams) / 100;
+      nutrients[key] += (per100g[key] * item.grams) / 100;
     cost += costFor(item, version) ?? 0;
   }
   return {

@@ -74,7 +74,7 @@ export function useDashboard() {
   const [eatenAt, setEatenAt] = useState("");
   const [mealType, setMealType] = useState<MealType>("lunch");
   const [modal, setModal] = useState<
-    "profile" | "edit" | "history" | "method" | "camera" | "access" | null
+    "profile" | "edit" | "history" | "method" | "camera" | "access" | "calories" | null
   >(null);
   const [preparingPhoto, setPreparingPhoto] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -784,7 +784,7 @@ export function useDashboard() {
     const version = record ? versionForRecord(record) : activeCatalogVersion;
     const total = summarize(a.items, version);
     const result = {
-      app: "NutriScan",
+      app: "YellowScan",
       exportedAt: new Date().toISOString(),
       analysis: a,
       catalogVersion: version,

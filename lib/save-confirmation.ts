@@ -16,6 +16,7 @@ function sameMeal(a: Submission, b: Submission) {
       i.label,
       i.grams,
       Boolean(i.uncertain),
+      i.customNutrients ? [i.customNutrients.calories,i.customNutrients.protein,i.customNutrients.carbs,i.customNutrients.fat,i.customNutrients.fiber] : null,
     ]),
     r.meal?.eatenAt,
     r.meal?.mealType,

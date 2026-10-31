@@ -114,11 +114,11 @@ export function ProfileForm({
         const r = profileSchema.safeParse(draft);
         if (!r.success) {
           setError(
-            "Lengkapi profil: usia 17–100 tahun, TB 100–230 cm, BB 30–300 kg, serta pilihan jenis kelamin.",
+            "Periksa profil: usia 17–100 tahun, TB 100–230 cm, BB 30–300 kg, jenis kelamin, dan target kalori opsional 1.500–4.500 kkal.",
           );
           return;
         }
-        onSave(r.data);
+        onSave(initial ? r.data : {...r.data,calorieTarget:undefined});
       }}
     >
       <div className="step-bar">
@@ -127,7 +127,7 @@ export function ProfileForm({
       </div>
       {step === 1 ? (
         <div className="name-step">
-          <span className="eyebrow">SELAMAT DATANG DI NUTRISCAN</span>
+          <span className="eyebrow">SELAMAT DATANG DI YELLOWSCAN</span>
           <h2>
             Nutrisi yang lebih dekat
             <br />
@@ -176,7 +176,7 @@ export function ProfileForm({
               />
             </label>
             <label>
-              Jenis kelamin untuk rumus energi
+              Jenis kelamin
               <select
                 required
                 value={draft.sex ?? ""}
@@ -384,7 +384,7 @@ export function ProfileForm({
                 ? "Menyimpan ke Neon…"
                 : initial
                   ? "Simpan profil"
-                  : "Mulai NutriScan"}
+                  : "Mulai YellowScan"}
             </button>
           </div>
         </>
@@ -404,7 +404,7 @@ export function EditForm({
   const [draft, setDraft] = useState(items.map((i) => ({ ...i })));
   const [error, setError] = useState("");
   return (
-    <form
+    <form className="manual-food-form"
       onSubmit={(e) => {
         e.preventDefault();
         const r = analysisSchema.safeParse({
@@ -414,7 +414,7 @@ export function EditForm({
           summary: "",
         });
         if (!r.success) {
-          setError("Isi nama dan porsi 1–1.500 gram untuk setiap makanan.");
+          setError("Periksa nama, porsi 1–1.500 gram, dan semua nilai gizi per 100 gram. Nilai kosong atau tidak valid belum bisa disimpan.");
           return;
         }
         onSave(r.data.items);
@@ -427,7 +427,7 @@ export function EditForm({
       </div>
       <div className="edit-list">
         {draft.map((item, index) => (
-          <div className="edit-row" key={index}>
+          <div className="manual-food-entry" key={index}><div className="edit-row">
             <div>
               <select
                 aria-label={"Makanan " + (index + 1)}
@@ -442,13 +442,14 @@ export function EditForm({
                             foodId: f?.id ?? null,
                             label: f?.name ?? v.label,
                             uncertain: false,
+                            customNutrients: undefined,
                           }
                         : v,
                     ),
                   );
                 }}
               >
-                <option value="unknown">Data gizi belum tersedia</option>
+                <option value="unknown">Makanan sendiri / di luar katalog</option>
                 {FOODS.map((f) => (
                   <option key={f.id} value={f.id}>
                     {f.name}
@@ -499,6 +500,14 @@ export function EditForm({
               <Trash2 size={17} />
             </button>
           </div>
+          {!item.foodId && <div className="manual-nutrients">
+            <label className="check-label"><input type="checkbox" checked={Boolean(item.customNutrients)} onChange={e=>setDraft(draft.map((v,i)=>i===index?{...v, customNutrients:e.target.checked?{calories:NaN,protein:NaN,carbs:NaN,fat:NaN,fiber:NaN}:undefined}:v))}/>Isi data gizi sendiri</label>
+            {item.customNutrients ? <>
+              <p className="form-note">Gizi per 100 gram dari label kemasan atau sumbermu. Isi 0 jika memang nol. Porsi di atas akan dihitung otomatis.</p>
+              <div className="form-grid">{METRICS.map(m=><label key={m.key}>{m.label} / 100 g ({m.unit})<input required type="number" min={0} max={m.key==="calories"?1000:100} step="any" value={Number.isFinite(item.customNutrients?.[m.key])?item.customNutrients![m.key]:""} onChange={e=>setDraft(draft.map((v,i)=>i===index?{...v,customNutrients:{...v.customNutrients!,[m.key]:e.target.value===""?NaN:Number(e.target.value)}}:v))}/></label>)}</div>
+            </> : <p className="form-note">Tanpa data gizi, makanan ini belum dihitung ke total dan sisa kalori.</p>}
+          </div>}
+          </div>
         ))}
       </div>
       {!draft.length && (
@@ -511,7 +520,7 @@ export function EditForm({
         onClick={() =>
           setDraft([
             ...draft,
-            { foodId: "nasi", label: "Nasi putih", grams: 100 },
+            { foodId: null, label: "", grams: 100 },
           ])
         }
       >

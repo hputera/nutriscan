@@ -1915,3 +1915,7 @@ legend {
     padding: 14px 0;
   }
 }
+
+.manual-food-entry {padding:12px 0;border-bottom:1px solid #eee4cc;}
+.manual-nutrients {margin:10px 0 6px;}
+.manual-nutrients .form-grid {margin-top:12px;}

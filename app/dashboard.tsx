@@ -30,7 +30,7 @@ export default function Dashboard() {
     return (
       <main className="loading">
         <LoaderCircle className="spin" size={28} />
-        <span>Menyiapkan NutriScan…</span>
+        <span>Menyiapkan YellowScan…</span>
       </main>
     );
   if (!profile)
@@ -41,7 +41,7 @@ export default function Dashboard() {
             <span className="brand-symbol">
               <ScanLine size={25} />
             </span>
-            NutriScan<span className="brand-dot">.</span>
+            YellowScan<span className="brand-dot">.</span>
           </a>
           <div>
             <span className="pill">KENALI MAKANANMU</span>
@@ -113,7 +113,7 @@ export default function Dashboard() {
           <span className="brand-symbol">
             <ScanLine size={23} />
           </span>
-          NutriScan<span className="brand-dot">.</span>
+          YellowScan<span className="brand-dot">.</span>
         </a>
         <span className="header-caption">
           YOUR EVERYDAY NUTRITION COMPANION
@@ -220,7 +220,8 @@ export default function Dashboard() {
             </p>
           </section>
           <section className="needs-card">
-            <span className="eyebrow">PERKIRAAN HARIAN</span>
+            <span className="eyebrow">{plan?.customTarget ? "TARGET PILIHANMU" : "PERKIRAAN HARIAN"}</span>
+            <button className="text-button" onClick={()=>d.setModal("calories")}>Ubah target kalori</button>
             {plan?.targets ? (
               <>
                 <h2>
@@ -244,7 +245,7 @@ export default function Dashboard() {
             ) : (
               <p>{plan?.reason}</p>
             )}
-            {plan?.isAdolescent && <p className="microcopy">{plan.goalNote}</p>}
+            {plan?.customTarget ? <p className="microcopy">Target kalori pilihanmu. Bisa diubah atau dikembalikan ke otomatis.</p> : plan?.isAdolescent && <p className="microcopy">{plan.goalNote}</p>}
             <button
               className="text-button"
               onClick={() => d.setModal("method")}
@@ -509,7 +510,9 @@ export default function Dashboard() {
                         <div>
                           <strong>{item.label}</strong>
                           <small>
-                            {!f
+                            {item.customNutrients
+                              ? "Gizi isian manual"
+                              : !f
                               ? "Data gizi belum tersedia"
                               : f.nutritionReference?.status === "reference"
                                 ? "Referensi TKPI"
@@ -739,7 +742,7 @@ export default function Dashboard() {
       </main>
       <footer className="app-footer">
         <span>
-          <strong>NutriScan.</strong> Kenali makananmu, temukan pilihanmu.
+          <strong>YellowScan.</strong> Kenali makananmu, temukan pilihanmu.
         </span>
         <button className="text-button" onClick={() => d.setModal("method")}>
           Prototype · estimasi nutrisi

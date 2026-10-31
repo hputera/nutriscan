@@ -1,4 +1,4 @@
-# NutriScan Cloud
+# YellowScan Cloud
 
 Next.js/React untuk analisis nutrisi makanan, BMI, catatan harian dan pilihan menu. Data operasional sekarang memakai Neon: profil, target, katalog versi, template menu, dan riwayat. Foto memakai Neon Object Storage privat. File project berisi kode, migrasi dan seed; runtime tidak memakai katalog hardcoded sebagai fallback.
 

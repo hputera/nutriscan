@@ -138,7 +138,7 @@ export async function POST(request: Request) {
         { status: 499 },
       );
     if (error instanceof GeminiFailure) {
-      console.error("[NutriScan] Gemini analysis failed", {
+      console.error("[YellowScan] Gemini analysis failed", {
         status: error.status,
         kind: error.kind,
         reason: error.message,
@@ -167,7 +167,7 @@ export async function POST(request: Request) {
         },
       );
     }
-    console.error("[NutriScan] Analysis failed", {
+    console.error("[YellowScan] Analysis failed", {
       name: error instanceof Error ? error.name : "UnknownError",
     });
     return NextResponse.json(

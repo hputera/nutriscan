@@ -16,7 +16,7 @@ import {
   matchFoodId,
 } from "@/lib/catalog";
 import { foodFor, number, summarize, versionForRecord } from "@/lib/nutrition";
-import { MEALS } from "@/lib/personal";
+import { MEALS, planFor } from "@/lib/personal";
 import { EditForm, Modal, ProfileForm, METRICS } from "./components";
 import { displayDate, useDashboard } from "./use-dashboard";
 function AccessForm({
@@ -50,6 +50,25 @@ function AccessForm({
       </div>
     </form>
   );
+}
+function CalorieForm({d}:{d:ReturnType<typeof useDashboard>}) {
+  const [automatic,setAutomatic]=useState(d.profile?.calorieTarget===undefined);
+  const suggested=d.profile?planFor({...d.profile,calorieTarget:undefined}).targets?.calories:undefined;
+  const [value,setValue]=useState(String(d.profile?.calorieTarget??suggested??""));
+  const [error,setError]=useState("");
+  return <form onSubmit={e=>{
+    e.preventDefault();if(!d.profile||d.profileSaving)return;
+    const target=Number(value);
+    if(!automatic&&(!Number.isInteger(target)||target<1500||target>4500)){setError("Isi target 1.500–4.500 kkal.");return;}
+    void d.saveProfile({...d.profile,calorieTarget:automatic?undefined:target});
+  }}>
+    <label className="check-label"><input type="checkbox" disabled={d.profileSaving} checked={automatic} onChange={e=>{setAutomatic(e.target.checked);setError("");}}/>Gunakan target otomatis</label>
+    <p className="form-note">{suggested?`Hitungan otomatis dari profilmu: ${number(suggested)} kkal/hari.`:"Hitungan otomatis belum tersedia untuk profil ini."}</p>
+    {!automatic&&<label>Target kalori harian (kkal)<input autoFocus required type="number" min={1500} max={4500} step={1} disabled={d.profileSaving} value={value} onChange={e=>setValue(e.target.value)}/></label>}
+    <p className="form-note">Perubahan memperbarui target harian, sisa kalori, dan pilihan menu. Catatan makanan lama tetap tersimpan.</p>
+    {(error||d.error)&&<p className="inline-error" role="alert">{error||d.error}</p>}
+    <div className="modal-actions"><button type="button" className="button secondary" disabled={d.profileSaving} onClick={()=>d.setModal(null)}>Batal</button><button type="submit" className="button primary" disabled={d.profileSaving}>{d.profileSaving?"Menyimpan…":"Simpan target"}</button></div>
+  </form>;
 }
 export default function DashboardModals({
   d,
@@ -95,6 +114,8 @@ export default function DashboardModals({
       </Modal>
     );
 
+  if (d.modal === "calories" && d.profile)
+    return <Modal title="Target kalori harian" subtitle="Atur targetmu dari dashboard." onClose={()=>{if(!d.profileSaving)close();}}><CalorieForm d={d}/></Modal>;
   if (d.modal === "profile")
     return (
       <Modal title="Profil & tujuan" onClose={close} wide>
@@ -244,7 +265,7 @@ export default function DashboardModals({
   if (d.modal === "method")
     return (
       <Modal
-        title="Cara NutriScan menghitung"
+        title="Cara YellowScan menghitung"
         subtitle="Angka transparan, keputusan tetap di tanganmu."
         onClose={close}
         wide
@@ -267,7 +288,7 @@ export default function DashboardModals({
                     {i.label} · {number(i.grams)} g
                   </summary>
                   <p>
-                    {f?.nutritionReference?.title ?? "Belum ada profil gizi"}
+                    {i.customNutrients ? "Gizi isian manual pengguna" : f?.nutritionReference?.title ?? "Belum ada profil gizi"}
                     {f?.nutritionReference?.code
                       ? ` · ${f.nutritionReference.code} · halaman ${f.nutritionReference.page}`
                       : ""}
@@ -276,11 +297,11 @@ export default function DashboardModals({
                       .replaceAll("padanan referensi", "data referensi")
                       .replaceAll("padanan resep", "referensi resep")}
                   </p>
-                  {f && (
+                  {(f || i.customNutrients) && (
                     <div className="source-metrics">
                       {METRICS.map((m) => (
                         <span key={m.key}>
-                          {m.label}: {number(f.per100g[m.key])} {m.unit}/100 g
+                          {m.label}: {number((f?.per100g ?? i.customNutrients!)[m.key])} {m.unit}/100 g
                         </span>
                       ))}
                     </div>

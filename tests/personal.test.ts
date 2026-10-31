@@ -371,3 +371,38 @@ test("adolescent EER has sex-specific equations for all four activity categories
   }
   assert.equal(planFor({ ...profile, age: 18 }).targets?.calories, 2840);
 });
+
+
+test("manual daily calorie target survives profile roundtrip, updates budget and resets to automatic", () => {
+  const p = profileSchema.parse({...profile, calorieTarget:2000});
+  assert.equal(p.calorieTarget,2000);
+  assert.equal(planFor(p).targets?.calories,2000);
+  assert.equal(planFor(p).targets?.protein,100);
+  const actual={...zero,calories:650};
+  const ideas=recommendations(p,actual,planFor(p).targets,menus);
+  assert.equal(ideas.remaining,1350);
+  assert.ok(ideas.items.every(i=>i.nutrients.calories<=1350));
+  assert.equal(planFor({...p,calorieTarget:undefined}).targets?.calories,2310);
+  for(const calorieTarget of [0,1499,4501,NaN,2000.5])assert.equal(profileSchema.safeParse({...profile,calorieTarget}).success,false);
+  assert.equal(planFor({...p,specialCare:true}).targets,null);
+});
+test("manual foods roundtrip through report schema and count toward daily calories", () => {
+  const customNutrients={calories:250,protein:10,carbs:30,fat:10,fiber:3};
+  const input:Submission={id:crypto.randomUUID(),createdAt:"2026-10-31T03:00:00.000Z",reportVersion:2,catalogVersion:"personal-v4",image:null,
+    analysis:{source:"manual",title:"Makanan sendiri",summary:"",items:[{foodId:null,label:"Resep sendiri",grams:150,customNutrients}]},
+    meal:{eatenAt:"2026-10-31T03:00:00.000Z",mealType:"lunch",targets:planFor(profile).targets!}};
+  const parsed=submissionSchema.parse(JSON.parse(JSON.stringify(input)));
+  const report=reportPayload(parsed);
+  assert.deepEqual(parsed.analysis.items[0].customNutrients,customNutrients);
+  assert.equal(report.nutrients?.calories,375);
+  assert.equal(report.incomplete,false);
+  const totals=dayTotals([{...input,analysis:parsed.analysis}],"2026-10-31");
+  assert.equal(totals.unmatched,0);assert.equal(totals.nutrients.calories,375);
+  assert.equal(recommendations(profile,totals.nutrients,planFor(profile).targets,menus).remaining,1935);
+  const unknown={...input,analysis:{...input.analysis,items:[{foodId:null,label:"Belum ada gizi",grams:100}]}};
+  assert.equal(dayTotals([unknown],"2026-10-31").unmatched,1);
+  const invalid=JSON.parse(JSON.stringify(input));invalid.analysis.items[0].customNutrients.calories=-1;
+  assert.equal(submissionSchema.safeParse(invalid).success,false);
+  delete invalid.analysis.items[0].customNutrients.protein;
+  assert.equal(submissionSchema.safeParse(invalid).success,false);
+});
