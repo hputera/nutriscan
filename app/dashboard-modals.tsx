@@ -62,9 +62,11 @@ function CalorieForm({d}:{d:ReturnType<typeof useDashboard>}) {
     if(!automatic&&(!Number.isInteger(target)||target<1500||target>4500)){setError("Isi target 1.500–4.500 kkal.");return;}
     void d.saveProfile({...d.profile,calorieTarget:automatic?undefined:target});
   }}>
-    <label className="check-label"><input type="checkbox" disabled={d.profileSaving} checked={automatic} onChange={e=>{setAutomatic(e.target.checked);setError("");}}/>Gunakan target otomatis</label>
+    <label>Target kalori harian (kkal)<input autoFocus required={!automatic} type="number" min={1500} max={4500} step={1} disabled={d.profileSaving} value={value} onChange={e=>{setValue(e.target.value);setAutomatic(false);setError("");}}/></label>
+    <p className="form-note">Ketik angka untuk memakai target sendiri, lalu klik Simpan target.</p>
+    <label className="check-label"><input type="checkbox" disabled={d.profileSaving} checked={automatic} onChange={e=>{setAutomatic(e.target.checked);if(e.target.checked)setValue(String(suggested??""));setError("");}}/>Gunakan target otomatis</label>
     <p className="form-note">{suggested?`Hitungan otomatis dari profilmu: ${number(suggested)} kkal/hari.`:"Hitungan otomatis belum tersedia untuk profil ini."}</p>
-    {!automatic&&<label>Target kalori harian (kkal)<input autoFocus required type="number" min={1500} max={4500} step={1} disabled={d.profileSaving} value={value} onChange={e=>setValue(e.target.value)}/></label>}
+
     <p className="form-note">Perubahan memperbarui target harian, sisa kalori, dan pilihan menu. Catatan makanan lama tetap tersimpan.</p>
     {(error||d.error)&&<p className="inline-error" role="alert">{error||d.error}</p>}
     <div className="modal-actions"><button type="button" className="button secondary" disabled={d.profileSaving} onClick={()=>d.setModal(null)}>Batal</button><button type="submit" className="button primary" disabled={d.profileSaving}>{d.profileSaving?"Menyimpan…":"Simpan target"}</button></div>

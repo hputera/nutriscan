@@ -279,6 +279,7 @@ export default function Dashboard() {
                 <small>kkal</small>
               </strong>
             </div>
+            <button type="button" className="text-button calorie-edit-button" onClick={()=>d.setModal("calories")}><Pencil size={14}/>Ubah target kalori</button>
             <p
               className="microcopy"
               role={d.ideas.remaining === null ? "status" : undefined}
@@ -294,6 +295,7 @@ export default function Dashboard() {
                 Periksa profil & tujuan
               </button>
             )}
+            <div className="recommendation-scroll" role="region" aria-label="Pilihan menu sesuai sisa kalori" tabIndex={0}>
             {d.ideas.groups.map((group) => (
               <div className="menu-band" key={group.key}>
                 <h3>{group.label}</h3>
@@ -330,6 +332,7 @@ export default function Dashboard() {
                 )}
               </div>
             ))}
+            </div>
             {profile.allergies.length > 0 && (
               <p className="microcopy">
                 Disaring: {profile.allergies.join(", ")}. Pastikan bahan dan

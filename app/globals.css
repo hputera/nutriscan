@@ -1919,3 +1919,19 @@ legend {
 .manual-food-entry {padding:12px 0;border-bottom:1px solid #eee4cc;}
 .manual-nutrients {margin:10px 0 6px;}
 .manual-nutrients .form-grid {margin-top:12px;}
+
+/* Keep menu suggestions bounded without moving the remaining-calorie summary. */
+.recommendation-scroll {
+  max-height: min(480px, 55dvh);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #c4a13c #fff8e5;
+  padding-right: 8px;
+  margin-top: 12px;
+}
+.recommendation-scroll .menu-band:first-child { margin-top: 0; }
+.recommendation-scroll:focus-visible { outline: 2px solid #af861d; outline-offset: 3px; }
+.calorie-edit-button { margin-bottom: 8px; min-height: 32px; }
